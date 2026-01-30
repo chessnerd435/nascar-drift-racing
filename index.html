@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Nascar Drift Racing</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Arial', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0d0d0d;
+            z-index: 999;
+            transition: opacity 1s ease-out;
+            overflow: hidden;
+        }
+
+        #logo-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #game-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* Takes up whole screen */
+            filter: brightness(0.8);
+        }
+
+        /* Removed pulse animation to keep background stable */
+
+        #progress-container {
+            position: absolute;
+            bottom: 80px;
+            /* Near bottom */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 500px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 3px solid #fff;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+            z-index: 10;
+            /* Above logo */
+        }
+
+
+        #loading-text {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: #00ff00;
+            font-size: 60px;
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 20px #00ff00;
+            z-index: 11;
+            /* Topmost */
+        }
+
+        /* Game Container */
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            /* Hidden initially */
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-family: Arial, sans-serif;
+            pointer-events: none;
+            text-shadow: 2px 2px 2px #000;
+        }
+
+        /* Virtual Controls for Mobile */
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            /* Let clicks pass through generally */
+        }
+
+        /* Car Selection Screen */
+        #car-select-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #111, #222);
+            color: white;
+            display: none;
+            /* Hidden initially */
+            z-index: 500;
+            font-family: 'Arial Narrow', sans-serif;
+        }
+
+        #cs-layout {
+            display: flex;
+            height: 100%;
+        }
+
+        #cs-menu {
+            width: 30%;
+            background: rgba(0, 0, 0, 0.8);
+            border-right: 2px solid #555;
+            padding-top: 50px;
+            box-shadow: 5px 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .car-option {
+            padding: 20px 40px;
+            font-size: 24px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 5px solid transparent;
+            color: #888;
+        }
+
+        .car-option:hover {
+            background: #222;
+            color: #fff;
+        }
+
+        .car-option.selected {
+            background: linear-gradient(90deg, #b20000, transparent);
+            color: #fff;
+            border-left: 5px solid #ff0000;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        #cs-preview {
+            width: 70%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #preview-image {
+            width: 80%;
+            max-width: 800px;
+            height: auto;
+            filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.8));
+            transition: opacity 0.3s;
+        }
+
+        #start-btn {
+            margin-top: 50px;
+            padding: 15px 60px;
+            font-size: 30px;
+            background: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px #ff0000;
+            transition: transform 0.1s;
+        }
+
+        #start-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Character Select Screen */
+        #character-select-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0d0d0d, #222);
+            color: white;
+            display: none;
+            /* Hidden - flex when shown */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 600;
+            /* Above car select */
+            transition: opacity 0.5s;
+        }
+
+        .screen-title {
+            font-size: 40px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin-bottom: 40px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .driver-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .driver-card {
+            width: 200px;
+            /* Portrait card */
+            height: 300px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #444;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s, border-color 0.2s;
+            overflow: hidden;
+        }
+
+        .driver-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #ff0000;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .driver-card img {
+            width: 100%;
+            height: 80%;
+            object-fit: cover;
+            /* object-position: top; */
+        }
+
+        .driver-name {
+            height: 20%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-align: center;
+            padding: 5px;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div id="logo-container">
+            <img id="game-logo" src="logo.png" alt="Nascar Drift Racing">
+        </div>
+
+        <div id="loading-text">0%</div>
+    </div>
+
+    <!-- Character Selection Screen -->
+    <div id="character-select-screen">
+        <h1 class="screen-title">SELECT DRIVER</h1>
+        <div class="driver-grid">
+            <div class="driver-card" onclick="selectDriver('brad')">
+                <img src="driver_brad_processed.png">
+                <div class="driver-name">Brad Keselowski</div>
+            </div>
+            <div class="driver-card" onclick="selectDriver('petty')">
+                <img src="driver_petty_processed.png">
+                <div class="driver-name">Richard Petty</div>
+            </div>
+            <div class="driver-card" onclick="selectDriver('gordon')">
+                <img src="driver_gordon_processed.png">
+                <div class="driver-name">Jeff Gordon</div>
+            </div>
+            <div class="driver-card" onclick="selectDriver('dale')">
+                <img src="driver_dale_processed.png">
+                <div class="driver-name">Dale Earnhardt</div>
+            </div>
+            <div class="driver-card" onclick="selectDriver('dalejr')">
+                <img src="driver_dalejr_processed.png">
+                <div class="driver-name">Dale Earnhardt Jr.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Car Selection Screen -->
+    <div id="car-select-screen">
+        <div id="cs-layout">
+            <div id="cs-menu">
+                <div class="car-option selected" onclick="selectCar('camaro')" id="opt-camaro">Chevrolet Camaro ZL1
+                </div>
+                <div class="car-option" onclick="selectCar('mustang')" id="opt-mustang">Ford Mustang Dark Horse</div>
+                <div class="car-option" onclick="selectCar('camry')" id="opt-camry">Toyota Camry XSE</div>
+            </div>
+            <div id="cs-preview">
+                <h1 style="position: absolute; top: 20px; right: 40px; font-style: italic; color: #444;">SELECT VEHICLE
+                </h1>
+                <img id="preview-image" src="camaro.png" alt="Car Preview">
+                <button id="start-btn" onclick="enterGame()">ENTER RACE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game World -->
+    <div id="game-container">
+        <div id="ui-layer">
+            <h2>LAPS: <span id="lap-counter">1/3</span></h2>
+            <div id="speedometer">0 MPH</div>
+            <div id="driver-display" style="position: absolute; top: 100px; right: 20px; text-align: center;">
+                <div id="hud-driver-name"
+                    style="font-size: 16px; font-weight: bold; margin-bottom: 5px; text-shadow: 1px 1px 2px black;">
+                </div>
+                <img id="hud-driver-img" src=""
+                    style="width: 70px; height: 70px; border-radius: 50%; border: 2px solid white; background: #333;">
+            </div>
+        </div>
+
+        <!-- Controls for Touch -->
+        <div class="controls">
+            <div class="btn" id="btn-left">◀</div>
+            <div class="btn" id="btn-right">▶</div>
+        </div>
+    </div>
+
+    <!-- Game Logic -->
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+
+        // --- Loading Sequence ---
+        const loadingText = document.getElementById('loading-text');
+        const loadingScreen = document.getElementById('loading-screen');
+        const characterSelectScreen = document.getElementById('character-select-screen'); // New
+        const carSelectScreen = document.getElementById('car-select-screen');
+        const gameContainer = document.getElementById('game-container');
+        const speedDisplay = document.getElementById('speedometer');
+
+        let progress = 0;
+        const fakeLoad = setInterval(() => {
+            progress += Math.random() * 5;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(fakeLoad);
+                setTimeout(startGame, 500); // Small pause at 100%
+            }
+
+            loadingText.innerText = Math.floor(progress) + '%';
+        }, 100);
+
+        function startGame() {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                characterSelectScreen.style.display = 'flex'; // Go to character select first
+            }, 1000);
+        }
+
+        // --- Character Selection Logic ---
+        window.selectedDriver = 'brad';
+        window.selectDriver = function (driver) {
+            window.selectedDriver = driver;
+
+            // Highlight effect (optional, or just move on)
+            // For now, simple transition
+            characterSelectScreen.style.opacity = 0;
+            setTimeout(() => {
+                characterSelectScreen.style.display = 'none';
+                carSelectScreen.style.display = 'block';
+                // Trigger car select fade in
+                carSelectScreen.style.opacity = 0;
+                requestAnimationFrame(() => carSelectScreen.style.opacity = 1);
+            }, 500);
+        }
+
+        // --- Car Selection Logic ---
+        window.selectedCar = 'camaro';
+
+        window.selectCar = function (carId) {
+            window.selectedCar = carId;
+
+            // Update UI highlight
+            document.querySelectorAll('.car-option').forEach(el => el.classList.remove('selected'));
+            document.getElementById('opt-' + carId).classList.add('selected');
+
+            // Update Image
+            const img = document.getElementById('preview-image');
+            img.style.opacity = 0;
+            setTimeout(() => {
+                // Add timestamp to force reload image (bypass cache)
+                img.src = carId + '.png?t=' + Date.now();
+                img.onload = () => { img.style.opacity = 1; };
+            }, 200);
+        }
+
+        window.enterGame = function () {
+            carSelectScreen.style.opacity = 0;
+            setTimeout(() => {
+                carSelectScreen.style.display = 'none';
+                gameContainer.style.display = 'block';
+
+                // Update HUD
+                document.getElementById('hud-driver-img').src = 'driver_' + window.selectedDriver + '_processed.png';
+
+                // Full Names Lookup
+                const fullNames = {
+                    'brad': 'Brad Keselowski',
+                    'petty': 'Richard Petty',
+                    'gordon': 'Jeff Gordon',
+                    'dale': 'Dale Earnhardt',
+                    'dalejr': 'Dale Earnhardt Jr.'
+                };
+
+                document.getElementById('hud-driver-name').innerText = fullNames[window.selectedDriver] || window.selectedDriver;
+
+                initGame();
+            }, 500);
+        }
+
+        // --- Game Engine ---
+        function initGame() {
+            // Scene Setup
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); // Sky blue
+            scene.fog = new THREE.Fog(0x87CEEB, 10, 50);
+
+            // Camera
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 3, 5);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            gameContainer.appendChild(renderer.domElement);
+
+            // Lighting
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 10, 7.5);
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0x404040));
+
+            // Texture Loading
+            const textureLoader = new THREE.TextureLoader();
+            const roadTexture = textureLoader.load('road.png');
+            roadTexture.wrapS = THREE.RepeatWrapping;
+            roadTexture.wrapT = THREE.RepeatWrapping;
+            roadTexture.repeat.set(1, 20); // Repeat road texture
+
+            const grassTexture = textureLoader.load('grass.png');
+            grassTexture.wrapS = THREE.RepeatWrapping;
+            grassTexture.wrapT = THREE.RepeatWrapping;
+            grassTexture.repeat.set(20, 20);
+
+            // Sky
+            const skyTexture = textureLoader.load('sky.png');
+            skyTexture.wrapS = THREE.RepeatWrapping;
+            skyTexture.repeat.set(4, 1);
+            const skyGeo = new THREE.CylinderGeometry(500, 500, 200, 32);
+            const skyMat = new THREE.MeshBasicMaterial({ map: skyTexture, side: THREE.BackSide });
+            const sky = new THREE.Mesh(skyGeo, skyMat);
+            sky.position.y = 50;
+            scene.add(sky);
+
+            // Ground (Track)
+            const geometry = new THREE.PlaneGeometry(20, 1000); // Narrower road
+            const material = new THREE.MeshStandardMaterial({ map: roadTexture });
+            const road = new THREE.Mesh(geometry, material);
+            road.rotation.x = -Math.PI / 2;
+            scene.add(road);
+
+            // Grass
+            const grassGeo = new THREE.PlaneGeometry(1000, 1000);
+            const grassMat = new THREE.MeshStandardMaterial({ map: grassTexture });
+            const grass = new THREE.Mesh(grassGeo, grassMat);
+            grass.rotation.x = -Math.PI / 2;
+            grass.position.y = -0.05; // Slightly below road
+            scene.add(grass);
+
+            // Car (Sprite based on selection)
+            // Car (Sprite based on selection)
+            const carTexture = new THREE.TextureLoader().load(window.selectedCar + '_rear.png', (tex) => {
+                // Adjust aspect ratio dynamically when loaded
+                const aspect = tex.image.width / tex.image.height;
+                // Keep height fixed at 4, let width scale
+                car.scale.set(4 * aspect, 4, 1);
+            });
+            carTexture.colorSpace = THREE.SRGBColorSpace; // Better colors
+            const carMat = new THREE.SpriteMaterial({ map: carTexture, transparent: true, depthTest: false }); // Disable depth test to prevent sinking
+            const car = new THREE.Sprite(carMat);
+            car.renderOrder = 999; // Always on top
+
+            // Set default initially to avoid 0 size
+            car.scale.set(6, 4, 1);
+
+            car.position.y = 2;
+            car.position.x = 0;
+
+            scene.add(car);
+
+
+
+            // Game Loop
+            let speed = 0;
+            const maxSpeed = 1.0;
+            // 7 seconds to max speed: 1.0 / (7 * 60) ≈ 0.00238
+            const acceleration = 0.0024;
+            const friction = 0.0012;
+            let drift = 0; // -1 to 1
+
+            // --- Audio System (Web Audio API) ---
+            let audioCtx, osc, gainNode;
+            let engineStarted = false;
+
+            function initAudio() {
+                if (engineStarted) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+
+                // Engine Oscillator
+                osc = audioCtx.createOscillator();
+                gainNode = audioCtx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.value = 100; // Idle rumble
+
+                // Filter to make it less harsh
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 400;
+
+                osc.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                osc.start();
+                gainNode.gain.value = 0.1; // Idle volume
+                engineStarted = true;
+            }
+
+            // Input Handling
+            const keys = {
+                ArrowLeft: false, ArrowRight: false, ArrowUp: false, ArrowDown: false,
+                w: false, a: false, s: false, d: false
+            };
+            window.addEventListener('keydown', (e) => {
+                keys[e.key] = true;
+                if (!engineStarted && (e.key === 'w' || e.key === 'ArrowUp')) initAudio();
+            });
+            window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+            // Touch Handling
+            const btnLeft = document.getElementById('btn-left');
+            const btnRight = document.getElementById('btn-right');
+            btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); keys.ArrowLeft = true; initAudio(); });
+            btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); keys.ArrowLeft = false; });
+            btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); keys.ArrowRight = true; initAudio(); });
+            btnRight.addEventListener('touchend', (e) => { e.preventDefault(); keys.ArrowRight = false; });
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Initialize audio on first click if not done (browser policy)
+                if (!engineStarted && speed > 0) initAudio();
+
+                // Acceleration / Braking (W/S or Up/Down)
+                if (keys.ArrowUp || keys.w) {
+                    speed = Math.min(speed + acceleration, maxSpeed);
+                } else if (keys.ArrowDown || keys.s) {
+                    speed = Math.max(speed - acceleration, 0);
+                } else {
+                    speed = Math.max(speed - friction, 0); // Friction
+                }
+
+                // Update Engine Sound
+                if (engineStarted && audioCtx) {
+                    // Pitch (Frequency) based on speed
+                    const baseFreq = 80;
+                    const maxFreq = 600; // Higher pitch
+                    // Speed is 0-1, so direct mapping works
+                    const targetFreq = baseFreq + (speed * (maxFreq - baseFreq));
+                    osc.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.1);
+
+                    // Volume based on throttle
+                    const targetGain = (keys.ArrowUp || keys.w) ? 0.3 : 0.1;
+                    gainNode.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.1);
+
+                    // Wobble for idle
+                    if (speed < 0.01) {
+                        osc.detune.setValueAtTime(Math.sin(Date.now() / 50) * 50, audioCtx.currentTime);
+                    } else {
+                        osc.detune.setValueAtTime(0, audioCtx.currentTime);
+                    }
+                }
+
+                // Infinite Scrolling based on SPEED
+                // CRITICAL FIX: Ensure offset delta is less than half the texture period (0.05 / 2 = 0.025)
+                // We use 0.024 as the max delta at max speed.
+                const visualSpeedFactor = 0.024;
+                roadTexture.offset.y += speed * visualSpeedFactor;
+                grassTexture.offset.y += speed * visualSpeedFactor;
+
+                // Update Speedometer
+                // 1.0 logic speed = 200 MPH
+                speedDisplay.innerText = Math.floor(speed * 200) + ' MPH';
+
+                // Move Car Left/Right (Drifting)
+                let targetDrift = 0;
+                if (speed > 0.001) {
+                    if ((keys.ArrowLeft || keys.a) && car.position.x > -8) {
+                        car.position.x -= 0.15; // Side movement
+                        targetDrift = 1; // Leaning left (visual rotate right)
+                    } else if ((keys.ArrowRight || keys.d) && car.position.x < 8) {
+                        car.position.x += 0.15;
+                        targetDrift = -1; // Leaning right
+                    }
+                }
+
+                // Smooth Drift Interpolation
+                drift += (targetDrift - drift) * 0.1;
+
+                // Apply rotation to sprite (Drift effect)
+                // Z-rotation for banking/drifting
+                carMat.rotation = drift * 0.3;
+
+                // NO BOBBING
+                car.position.y = 2;
+
+                // Camera sway
+                camera.position.x += (car.position.x - camera.position.x) * 0.1;
+
+                // FOV widen effect at high speed (Nitro feeling)
+                // camera.fov = 75 + (speed * 20); 
+                // camera.updateProjectionMatrix();
+
+                camera.lookAt(car.position.x * 0.5, 0, -10); // Look ahead on track
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Resize Handler
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+    </script>
+</body>
+
+</html>

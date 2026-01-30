@@ -1,0 +1,20 @@
+# Source files
+*.py
+*.md
+
+# Intermediate/Raw Assets
+temp_*
+debug_*
+*_raw.png
+user_provided_*
+wiki_camry.jpg
+correct_car.png
+.vercelignore
+
+# Raw Driver Images (only processed versions are used)
+driver_brad.png
+driver_dale.jpg
+driver_dalejr.png
+driver_gordon.png
+driver_petty.png
+driver_dale.png
